@@ -10,6 +10,7 @@ import base64
 from io import StringIO
 import requests
 
+
 # Set constants
 START = "2000-08-01"
 GOLD_TICKER = 'GC=F'
@@ -31,10 +32,15 @@ def load_data(ticker, start_date, end_date):
 # Functions to plot raw data with column selection
 
 def plot_line_chart(data, selected_columns):
+    colors = ['blue', 'red', 'green', 'orange',
+              'purple', 'yellow']  # Define a list of colors
+
     fig = go.Figure()
-    for column in selected_columns:
-        fig.add_trace(go.Scatter(x=data['Date'], y=data[column],
-                                 name=f"Gold {column} Price", line=dict(color='blue' if column == "Open" else 'red')))
+    for i, column in enumerate(selected_columns):
+        if column != 'Date':  # Exclude the 'Date' column
+            color_index = i % len(colors)  # Use modulo to cycle through colors
+            fig.add_trace(go.Scatter(x=data['Date'], y=data[column],
+                                     name=f"{column}", line=dict(color=colors[color_index])))
     fig.update_layout(title='Gold Price Time Series Data',
                       xaxis_title='Date', yaxis_title='Price (USD)')
     fig.update_layout(xaxis_rangeslider_visible=True)
@@ -55,28 +61,21 @@ def plot_candlestick_chart(data):
 def plot_histogram(data, selected_columns):
     fig = go.Figure()
     for column in selected_columns:
-        fig.add_trace(go.Histogram(
-            x=data[column], name=f"Gold {column} Price"))
+        if column != 'Date':  # Exclude the 'Date' column
+            fig.add_trace(go.Histogram(
+                x=data[column], name=f"{column}"))
     fig.update_layout(title='Gold Price Histogram',
                       xaxis_title='Price (USD)', yaxis_title='Frequency')
     return fig
 
 
-def plot_mountain_plot(data):
-    fig = go.Figure(data=[go.Surface(z=data.values)])
-    fig.update_layout(scene=dict(xaxis_title='Date',
-                                 yaxis_title='Price (USD)',
-                                 zaxis_title='Volume'),
-                      title='Gold Price Mountain Plot')
-    return fig
-
-
 def plot_raw_data(data):
+    # Exclude the 'Date' column from the multiselect options
     selected_columns = st.multiselect(
-        "Select columns to plot", data.columns.tolist(), default=["Open", "Close"]
+        "Select columns to plot", [col for col in data.columns if col != 'Date'], default=["Open", "Close"]
     )
 
-    plot_types = ['Line', 'Candle', 'Histogram', 'Mountain', 'Baseline']
+    plot_types = ['Line', 'Histogram', 'Candle']
     selected_plot_type = st.selectbox('Select plot type:', plot_types)
 
     if not selected_columns:
@@ -88,8 +87,6 @@ def plot_raw_data(data):
             fig = plot_candlestick_chart(data)
         elif selected_plot_type == 'Histogram':
             fig = plot_histogram(data, selected_columns)
-        elif selected_plot_type == 'Mountain':
-            fig = plot_mountain_plot(data)
 
     st.plotly_chart(fig)
 
@@ -129,7 +126,7 @@ def download_csv(data):
     data.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
     b64 = base64.b64encode(csv_buffer.read().encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="forecasted_data.csv">Download Forecasted Data as CSV</a>'
+    href = f'<a href="data:file/csv;base64,{b64}" download="forecasted_data.csv" class="button" >Download Forecasted Data as CSV</a>'
     st.markdown(href, unsafe_allow_html=True)
 
 
@@ -237,12 +234,12 @@ def main():
     actual = data['Close'].iloc[-len(forecast_df):]
     forecast = forecast_df['Forecast']
     mae, mse, rmse, mape, da = evaluate_forecast(actual, forecast)
-    ##st.subheader('Forecast Evaluation Metrics')
-    ##st.write(f'Mean Absolute Error (MAE): {mae}')
-    ##st.write(f'Mean Squared Error (MSE): {mse}')
-    ##st.write(f'Root Mean Squared Error (RMSE): {rmse}')
-    ##st.write(f'Mean Absolute Percentage Error (MAPE): {mape}')
-    ##st.write(f'Directional Accuracy (DA): {da}%')
+    st.subheader('Forecast Evaluation Metrics')
+    st.write(f'Mean Absolute Error (MAE): {mae}')
+    st.write(f'Mean Squared Error (MSE): {mse}')
+    st.write(f'Root Mean Squared Error (RMSE): {rmse}')
+    st.write(f'Mean Absolute Percentage Error (MAPE): {mape}')
+    st.write(f'Directional Accuracy (DA): {da}%')
 
 
 if __name__ == '__main__':
