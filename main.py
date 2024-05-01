@@ -4,6 +4,7 @@ from datetime import date, timedelta, datetime
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 import plotly.graph_objs as go
+import matplotlib.pyplot as plt  # New import for Matplotlib
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
 import base64
@@ -15,21 +16,18 @@ START = "2000-08-01"
 GOLD_TICKER = 'GC=F'
 
 # Function to load data with error handling
-
-
-@st.cache_data
+@st.cache
 def load_data(ticker, start_date, end_date):
     try:
         data = yf.download(ticker, start_date, end_date)
+        data = data[['Date', 'Open', 'Close', 'High', 'Low']]  # Only load necessary columns
         data.reset_index(inplace=True)
         return data
     except Exception as e:
         st.error(f"An error occurred while loading data: {e}")
         return None
 
-
 # Functions to plot raw data with column selection
-
 def plot_line_chart(data, selected_columns):
     fig = go.Figure()
     for column in selected_columns:
@@ -39,7 +37,6 @@ def plot_line_chart(data, selected_columns):
                       xaxis_title='Date', yaxis_title='Price (USD)')
     fig.update_layout(xaxis_rangeslider_visible=True)
     return fig
-
 
 def plot_candlestick_chart(data):
     fig = go.Figure(data=[go.Candlestick(x=data['Date'],
@@ -51,7 +48,6 @@ def plot_candlestick_chart(data):
                       xaxis_title='Date', yaxis_title='Price (USD)')
     return fig
 
-
 def plot_histogram(data, selected_columns):
     fig = go.Figure()
     for column in selected_columns:
@@ -61,7 +57,6 @@ def plot_histogram(data, selected_columns):
                       xaxis_title='Price (USD)', yaxis_title='Frequency')
     return fig
 
-
 def plot_mountain_plot(data):
     fig = go.Figure(data=[go.Surface(z=data.values)])
     fig.update_layout(scene=dict(xaxis_title='Date',
@@ -69,7 +64,6 @@ def plot_mountain_plot(data):
                                  zaxis_title='Volume'),
                       title='Gold Price Mountain Plot')
     return fig
-
 
 def plot_raw_data(data):
     selected_columns = st.multiselect(
@@ -94,8 +88,6 @@ def plot_raw_data(data):
     st.plotly_chart(fig)
 
 # Function to forecast using ARIMA with dynamic period calculation
-
-
 def forecast_arima(data, n_years, n_days, p, d, q):
     period = n_years * 365 + n_days
     df_train = data[['Date', 'Close']]
@@ -109,8 +101,6 @@ def forecast_arima(data, n_years, n_days, p, d, q):
     return forecast_df, model_fit
 
 # Function to evaluate forecast accuracy including MAPE and DA
-
-
 def evaluate_forecast(actual, forecast):
     mae = mean_absolute_error(actual, forecast)
     mse = mean_squared_error(actual, forecast)
@@ -122,20 +112,15 @@ def evaluate_forecast(actual, forecast):
     return mae, mse, rmse, mape, da
 
 # Function to download forecasted data as CSV
-
-
 def download_csv(data):
     csv_buffer = StringIO()
     data.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
     b64 = base64.b64encode(csv_buffer.read().encode()).decode()
-    href = f'<a href="data:file/csv;base64,{
-        b64}" download="forecasted_data.csv">Download Forecasted Data as CSV</a>'
+    href = f'<a href="data:file/csv;base64,{b64}" download="forecasted_data.csv">Download Forecasted Data as CSV</a>'
     st.markdown(href, unsafe_allow_html=True)
 
-
 # Define function to get currency exchange rates
-
 def get_currency_exchange_rates(base_currency='USD'):
     api_key = '36d170118bce46a187e7b60c89b394a3'
     url = f'https://open.er-api.com/v6/latest/{base_currency}?apikey={api_key}'
@@ -146,10 +131,7 @@ def get_currency_exchange_rates(base_currency='USD'):
         # Handle API request error
         return None
 
-
 # Main function
-
-
 def main():
     # Get current date
     TODAY = date.today().strftime("%Y-%m-%d")
@@ -189,7 +171,7 @@ def main():
         'Sweden (kr)': currency_exchange_rates.get('SEK', 8.66),
         'Norway (kr)': currency_exchange_rates.get('NOK', 8.46),
     }
-# Sidebar
+    # Sidebar
     st.sidebar.title("Gold Jun 24 (GC=F) Price Forecast App")
     st.sidebar.markdown("### Model Parameters")
     n_years = st.sidebar.slider('Years of prediction:', 0, 10)
@@ -201,7 +183,7 @@ def main():
     d = st.sidebar.slider('ARIMA parameter d:', 0, 2, 1)
     q = st.sidebar.slider('ARIMA parameter q:', 0, 10, 5)
 
- # Main content
+    # Main content
     st.title('Gold Price Forecast App')
     data = load_data(GOLD_TICKER, START, TODAY)
     if data is not None:
@@ -226,7 +208,7 @@ def main():
     if st.sidebar.checkbox('Download Forecasted Data', True):
         download_csv(forecast_df)
 
-# Calculate forecasted prices for the selected country
+    # Calculate forecasted prices for the selected country
     forecast_df[selected_country] = forecast_df['Forecast'] * \
         country_prices[selected_country] / static_price_usd
 
