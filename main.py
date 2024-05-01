@@ -129,8 +129,7 @@ def download_csv(data):
     data.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
     b64 = base64.b64encode(csv_buffer.read().encode()).decode()
-    href = f'<a href="data:file/csv;base64,{
-        b64}" download="forecasted_data.csv">Download Forecasted Data as CSV</a>'
+    href = f'<a href="data:file/csv;base64,{b64}" download="forecasted_data.csv">Download Forecasted Data as CSV</a>'
     st.markdown(href, unsafe_allow_html=True)
 
 
