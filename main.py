@@ -234,13 +234,7 @@ def main():
     actual = data['Close'].iloc[-len(forecast_df):]
     forecast = forecast_df['Forecast']
     mae, mse, rmse, mape, da = evaluate_forecast(actual, forecast)
-    st.subheader('Forecast Evaluation Metrics')
-    st.write(f'Mean Absolute Error (MAE): {mae}')
-    st.write(f'Mean Squared Error (MSE): {mse}')
-    st.write(f'Root Mean Squared Error (RMSE): {rmse}')
-    st.write(f'Mean Absolute Percentage Error (MAPE): {mape}')
-    st.write(f'Directional Accuracy (DA): {da}%')
-
+    
 
 if __name__ == '__main__':
     main()
